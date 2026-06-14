@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Staff — MXYU01</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F1EFE8;color:#2C2C2A;min-height:100vh}
+.topbar{background:#fff;border-bottom:0.5px solid #D3D1C7;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-title{font-size:16px;font-weight:500}
+.container{max-width:1100px;margin:0 auto;padding:24px 16px}
+.upload-zone{background:#fff;border:1.5px dashed #B4B2A9;border-radius:12px;padding:40px;text-align:center;margin-bottom:24px}
+.upload-zone.drag{border-color:#185FA5;background:#E6F1FB}
+.upload-title{font-size:14px;font-weight:500;margin-bottom:4px}
+.upload-sub{font-size:12px;color:#888780;margin-bottom:10px}
+.upload-btn{display:inline-block;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid #B4B2A9;background:#fff;cursor:pointer;color:#444441}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:16px}
+.kpi-card{background:#fff;border-radius:10px;padding:10px 12px}
+.kpi-label{font-size:11px;color:#888780;margin-bottom:2px}
+.kpi-value{font-size:22px;font-weight:500}
+.alerta-banner{background:#FCEBEB;border:0.5px solid #F09595;border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#791F1F;display:flex;align-items:center;gap:8px}
+.tabs{display:flex;gap:4px;border-bottom:0.5px solid #D3D1C7}
+.tab{font-size:13px;padding:8px 16px;border-radius:8px 8px 0 0;cursor:pointer;color:#888780;border:0.5px solid transparent;border-bottom:none;margin-bottom:-1px}
+.tab.active{background:#fff;color:#2C2C2A;font-weight:500;border-color:#D3D1C7;border-bottom-color:#fff}
+.panel{background:#fff;border:0.5px solid #D3D1C7;border-top:none;border-radius:0 0 12px 12px;padding:16px;margin-bottom:16px}
+.section-label{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.filter-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.pill{font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid #D3D1C7;background:#F1EFE8;color:#888780;cursor:pointer;white-space:nowrap}
+.pill.active-t{background:#EEEDFE;color:#3C3489;border-color:#AFA9EC;font-weight:500}
+.ventana-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.ventana-row label{font-size:11px;color:#888780;white-space:nowrap}
+.ventana-row input{flex:1}
+.ventana-row span{font-size:12px;font-weight:500;min-width:52px;text-align:right}
+.proceso-card{background:#fff;border:0.5px solid #D3D1C7;border-radius:10px;overflow:hidden;margin-bottom:8px}
+.proceso-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid #D3D1C7;cursor:pointer;user-select:none}
+.proceso-title{font-size:13px;font-weight:500}
+.cpill{font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;margin-left:4px}
+.persona-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:0.5px solid #D3D1C7}
+.persona-row:last-child{border-bottom:none}
+.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0}
+.pinfo{flex:1;min-width:0}
+.pnombre{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.psub{font-size:10px;color:#888780;display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
+.ttag{font-size:9px;background:#F1EFE8;color:#444441;padding:1px 5px;border-radius:8px}
+.nstag{font-size:9px;background:#EEEDFE;color:#3C3489;padding:1px 5px;border-radius:8px}
+.badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.ba{background:#EAF3DE;color:#27500A}
+.bf{background:#FAEEDA;color:#633806}
+.bn{background:#EEEDFE;color:#3C3489}
+.pright{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.tiempo{font-size:10px;color:#888780}
+.tiempo.al{color:#A32D2D;font-weight:500}
+.dot-al{width:6px;height:6px;border-radius:50%;background:#E24B4A;flex-shrink:0}
+.chevron{font-size:10px;color:#888780;transition:transform 0.15s;display:inline-block}
+.collapsed .chevron{transform:rotate(-90deg)}
+.collapsed .proceso-body{display:none}
+.empty{text-align:center;padding:32px;color:#888780;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Monitor de staff · MXYU01</div>
+    <div style="font-size:12px;color:#888780" id="meta-sub">Carga un CSV exportado desde Fury</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:#888780" id="reloj"></span>
+    <label class="upload-btn" for="csv-top" style="margin:0">↑ Cargar CSV</label>
+    <input type="file" id="csv-top" accept=".csv" style="display:none">
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="upload-zone" id="drop-zone">
+    <svg width="36" height="36" viewBox="0 0 40 40" fill="none" style="margin:0 auto 10px;display:block;opacity:0.35">
+      <rect width="40" height="40" rx="8" fill="#B4B2A9"/>
+      <path d="M20 26V14M20 14L15 19M20 14L25 19" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M13 28H27" stroke="#888780" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div class="upload-title">Arrastra tu CSV aquí</div>
+    <div class="upload-sub">Exporta la query desde Fury y suelta el archivo</div>
+    <label class="upload-btn" for="csv-drop">Seleccionar archivo</label>
+    <input type="file" id="csv-drop" accept=".csv" style="display:none">
+  </div>
+
+  <div id="dashboard" style="display:none">
+
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Total</div><div class="kpi-value" id="cnt-total">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">En operación</div><div class="kpi-value" style="color:#0F6E56" id="cnt-activo">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">No sistémico</div><div class="kpi-value" style="color:#534AB7" id="cnt-nosist">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Fuera proceso</div><div class="kpi-value" style="color:#854F0B" id="cnt-fuera">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Alertas +1hr</div><div class="kpi-value" style="color:#A32D2D" id="cnt-alerta">0</div></div>
+    </div>
+
+    <div id="alerta-banner" class="alerta-banner" style="display:none">
+      <div style="width:7px;height:7px;border-radius:50%;background:#E24B4A;flex-shrink:0"></div>
+      <span id="alerta-texto"></span>
+    </div>
+
+    <div style="background:#fff;border:0.5px solid #D3D1C7;border-radius:12px;padding:16px;margin-bottom:16px">
+      <div class="section-label">Turno</div>
+      <div class="filter-pills" id="filtros-turno">
+        <button class="pill active-t" data-t="todos">Todos</button>
+        <button class="pill" data-t="T1">T1 · 05:30–15:00</button>
+        <button class="pill" data-t="T2">T2 · 12:00–21:30</button>
+        <button class="pill" data-t="T3">T3 · 21:30–05:30</button>
+        <button class="pill" data-t="T4">T4 Mix · 19:30–05:30</button>
+        <button class="pill" data-t="T5">T5 Mix · 10:30–21:30</button>
+      </div>
+      <div class="section-label">Mostrar fuera de proceso de los últimos</div>
+      <div class="ventana-row">
+        <label>minutos:</label>
+        <input type="range" id="ventana-slider" min="10" max="600" step="10" value="120">
+        <span id="ventana-val">120 min</span>
+      </div>
+    </div>
+
+    <div id="procesos-container"></div>
+  </div>
+</div>
+
+<script>
+var DATA = [];
+var fT = 'todos';
+var ventana = 120;
+
+var PC = {
+  'Picking':        {bg:'#E6F1FB',color:'#0C447C',dot:'#185FA5'},
+  'Packing':        {bg:'#E1F5EE',color:'#085041',dot:'#0F6E56'},
+  'Armado HU':      {bg:'#FAEEDA',color:'#633806',dot:'#854F0B'},
+  'Despacho':       {bg:'#EEEDFE',color:'#3C3489',dot:'#534AB7'},
+  'Wallin / Batch': {bg:'#EAF3DE',color:'#27500A',dot:'#3B6D11'}
+};
+var AV = [
+  {bg:'#E6F1FB',color:'#0C447C'},{bg:'#EAF3DE',color:'#27500A'},
+  {bg:'#FAEEDA',color:'#633806'},{bg:'#EEEDFE',color:'#3C3489'},
+  {bg:'#E1F5EE',color:'#085041'},{bg:'#FBEAF0',color:'#72243E'},
+  {bg:'#FAECE7',color:'#712B13'},{bg:'#F1EFE8',color:'#444441'}
+];
+var OP = ['Picking','Packing','Armado HU','Despacho','Wallin / Batch'];
+
+function parseCSV(txt) {
+  var lines = txt.trim().split(/\r?\n/);
+  var hdrs = lines[0].split(',').map(function(h){return h.trim().replace(/^"|"$/g,'');});
+  return lines.slice(1).filter(function(l){return l.trim();}).map(function(line){
+    var v=[],c='',q=false;
+    for(var i=0;i<line.length;i++){
+      if(line[i]==='"'){q=!q;}
+      else if(line[i]===','&&!q){v.push(c);c='';}
+      else c+=line[i];
+    }
+    v.push(c);
+    var o={};
+    hdrs.forEach(function(h,i){o[h]=(v[i]||'').replace(/^"|"$/g,'').trim();});
+    return o;
+  });
+}
+
+function ini(n){return (n||'').slice(0,2).toUpperCase();}
+function fmt(m){m=Math.max(0,parseInt(m)||0);return m<60?m+' min':Math.floor(m/60)+'h '+(m%60)+'min';}
+
+function efecto(r){
+  if(r.modo==='no_sistemico') return 'no_sistemico';
+  if(r.estado==='fuera') return 'fuera';
+  return 'activo';
+}
+
+function render(){
+  var fil = DATA.filter(function(r){return fT==='todos'||r.turno===fT;});
+
+  // KPIs sobre todos
+  var tot=0,act=0,nos=0,fue=0,ale=0,aN=[];
+  fil.forEach(function(r){
+    var e=efecto(r); tot++;
+    if(e==='activo') act++;
+    else if(e==='no_sistemico') nos++;
+    else {
+      fue++;
+      var m=Math.max(0,parseInt(r.mins_sin_registro)||0);
+      if(m>60){ale++;aN.push((r.LDAP_USER||'')+'('+r.proceso+')');}
+    }
+  });
+  document.getElementById('cnt-total').textContent=tot;
+  document.getElementById('cnt-activo').textContent=act;
+  document.getElementById('cnt-nosist').textContent=nos;
+  document.getElementById('cnt-fuera').textContent=fue;
+  document.getElementById('cnt-alerta').textContent=ale;
+
+  var banner=document.getElementById('alerta-banner');
+  if(ale>0){
+    banner.style.display='flex';
+    document.getElementById('alerta-texto').textContent=ale+' persona(s) fuera por más de 1hr: '+aN.slice(0,4).join(', ')+(aN.length>4?' y '+(aN.length-4)+' más':'');
+  } else banner.style.display='none';
+
+  // Mostrar todos — activos, no sistémicos y fuera dentro de ventana
+  var vista = fil.filter(function(r){
+    var e=efecto(r);
+    if(e==='fuera'){
+      return Math.max(0,parseInt(r.mins_sin_registro)||0) <= ventana;
+    }
+    return true;
+  });
+
+  var cont=document.getElementById('procesos-container');
+  cont.innerHTML='';
+
+  if(!vista.length){
+    cont.innerHTML='<div class="empty">Sin resultados para los filtros seleccionados.</div>';
+    return;
+  }
+
+  // Agrupar por proceso
+  var grupos={};
+  vista.forEach(function(r){
+    var proc = r.proceso||'Sin proceso';
+    if(!grupos[proc]) grupos[proc]=[];
+    grupos[proc].push(r);
+  });
+
+  var keys = OP.filter(function(k){return grupos[k];}).concat(
+    Object.keys(grupos).filter(function(k){return OP.indexOf(k)<0;})
+  );
+
+  keys.forEach(function(proc){
+    var pers=grupos[proc];
+    var pc=PC[proc]||{bg:'#F1EFE8',color:'#444441',dot:'#888780'};
+    var activos=pers.filter(function(p){return efecto(p)==='activo';}).length;
+    var nosist=pers.filter(function(p){return efecto(p)==='no_sistemico';}).length;
+
+    var card=document.createElement('div');
+    card.className='proceso-card';
+
+    var hdr=document.createElement('div');
+    hdr.className='proceso-header';
+    hdr.innerHTML=
+      '<div style="display:flex;align-items:center;gap:7px">'+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+pc.dot+';flex-shrink:0"></div>'+
+        '<span class="proceso-title">'+proc+'</span>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:4px">'+
+        '<span class="cpill" style="background:'+pc.bg+';color:'+pc.color+'">'+pers.length+' personas</span>'+
+        (nosist>0?'<span class="cpill" style="background:#EEEDFE;color:#3C3489">'+nosist+' no sist.</span>':'')+
+        '<span class="chevron">▾</span>'+
+      '</div>';
+
+    var body=document.createElement('div');
+    body.className='proceso-body';
+
+    pers.forEach(function(per,i){
+      var av=AV[i%AV.length];
+      var e=efecto(per);
+      var mins=Math.max(0,parseInt(per.mins_sin_registro)||0);
+      var esAl=e==='fuera'&&mins>60;
+      var ldap=per.LDAP_USER||'';
+      var mgr=per.MANAGER_LDAP_USER||'';
+      var ant=per.area_anterior||'';
+      var cambio=ant&&ant!=='null'&&ant!==per.proceso&&ant!=='';
+      var subtype=per.subtype||'';
+
+      var badge=e==='activo'?'<span class="badge ba">en operación</span>':
+                e==='no_sistemico'?'<span class="badge bn">no sistémico</span>':
+                '<span class="badge bf">fuera de proceso</span>';
+
+      var tiempoTxt=e==='fuera'
+        ?(mins===0?'Recién salió':'Fuera hace '+fmt(mins))
+        :(mins===0?'Activo ahora':'Activo hace '+fmt(mins));
+
+      var row=document.createElement('div');
+      row.className='persona-row';
+      row.innerHTML=
+        '<div class="avatar" style="background:'+av.bg+';color:'+av.color+'">'+ini(ldap)+'</div>'+
+        '<div class="pinfo">'+
+          '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">'+
+            '<span class="pnombre">'+ldap+'</span>'+
+            '<span class="ttag">'+(per.turno||'')+'</span>'+
+            (e==='no_sistemico'?'<span class="nstag">'+subtype+'</span>':'')+
+          '</div>'+
+          '<div class="psub">'+
+            '<span>Sup: '+mgr+'</span>'+
+            (cambio?'<span style="color:#854F0B;font-weight:500">· venía de '+ant+'</span>':'')+
+          '</div>'+
+        '</div>'+
+        '<div class="pright">'+
+          badge+
+          '<span class="tiempo'+(esAl?' al':'')+'">'+tiempoTxt+'</span>'+
+        '</div>'+
+        (esAl?'<div class="dot-al"></div>':'<div style="width:6px"></div>');
+
+      body.appendChild(row);
+    });
+
+    hdr.addEventListener('click',function(){card.classList.toggle('collapsed');});
+    card.appendChild(hdr);
+    card.appendChild(body);
+    cont.appendChild(card);
+  });
+}
+
+// Filtro turno
+document.getElementById('filtros-turno').addEventListener('click',function(e){
+  var btn=e.target.closest('[data-t]');
+  if(!btn) return;
+  fT=btn.getAttribute('data-t');
+  document.querySelectorAll('[data-t]').forEach(function(b){b.classList.toggle('active-t',b===btn);});
+  render();
+});
+
+// Slider ventana
+document.getElementById('ventana-slider').addEventListener('input',function(){
+  ventana=parseInt(this.value);
+  document.getElementById('ventana-val').textContent=ventana+' min';
+  render();
+});
+
+// Carga CSV
+function loadCSV(txt){
+  DATA=parseCSV(txt);
+  if(!DATA.length){alert('No se pudieron leer datos.');return;}
+  document.getElementById('drop-zone').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('meta-sub').textContent='Datos cargados · '+DATA.length+' registros · '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  render();
+}
+
+function handleFile(f){
+  if(!f||!f.name.endsWith('.csv')){alert('Por favor selecciona un archivo .csv');return;}
+  var r=new FileReader();
+  r.onload=function(e){loadCSV(e.target.result);};
+  r.readAsText(f);
+}
+
+document.getElementById('csv-top').addEventListener('change',function(e){handleFile(e.target.files[0]);});
+document.getElementById('csv-drop').addEventListener('change',function(e){handleFile(e.target.files[0]);});
+
+var dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',function(){dz.classList.remove('drag');});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag');handleFile(e.dataTransfer.files[0]);});
+
+setInterval(function(){
+  document.getElementById('reloj').textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+},1000);
+document.getElementById('reloj').textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+</script>
+</body>
+</html>
